@@ -65,7 +65,9 @@ class CompileCommand extends Command
         $this->addOption("--project", '-p', InputOption::VALUE_OPTIONAL, "Loads the project's info for compilation from specified file.");
 
         $this->addOption("--project-attrs", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Attributes for the project.");
-        $this->addOption("--project-data", NULL, InputOption::VALUE_OPTIONAL, "Specify a different application data directory name for the project", "SkylineAppData");
+
+        $this->addOption("--project-root", NULL, InputOption::VALUE_OPTIONAL, "Specify the project root directory to compile in");
+        $this->addOption("--project-public", NULL, InputOption::VALUE_OPTIONAL, "Specify the public directory of your app");
 
         $this->addOption("--search-path", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify custom search paths. The count of arguments must be equal to the count of --search-type.");
 
@@ -77,6 +79,8 @@ class CompileCommand extends Command
         $this->io = new SymfonyStyle($input, $output);
 
         if($bs = $input->getOption("bootstrap")) {
+            $bs = getcwd() . "/$bs";
+
             if(!is_file($bs)) {
                 $this->io->error("Bootstrap file $bs not found.");
                 die();
@@ -87,7 +91,19 @@ class CompileCommand extends Command
 
     protected function interact(InputInterface $input, OutputInterface $output)
     {
-        echo "OK";
+        $project = $input->getOption("project");
+        if(!$project) {
+            $c = $this->io->choice("You did not specify any project information. Do you want to do manually or load a file?", [
+                "M" => 'manually',
+                'F' => 'use a config file'
+            ], "manually");
+
+            if($c == 'M') {
+                $projectRoot = $input->getOption("project-root") ?: $this->io->ask("Where should the project to be compiled in?", "./SkylineAppData");
+                $public = $this->io->ask("The public directory's name", "Public");
+
+            }
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
