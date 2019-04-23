@@ -35,8 +35,11 @@
 namespace Skyline\CLI;
 
 
-use Skyline\Compiler\CompilerConfiguration as CC;
+use Skyline\CLI\Project\InputProjectMerger;
 use Skyline\Compiler\Project\Attribute\Attribute;
+use Skyline\Compiler\Project\Attribute\SearchPathCollection;
+use Skyline\Compiler\Project\Loader\LoaderInterface;
+use Skyline\Compiler\Project\MutableProjectInterface;
 use Skyline\Compiler\Project\Project;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -59,6 +62,7 @@ class CompileCommand extends Command
 
         $this->addOption("--dev", NULL, InputOption::VALUE_NONE, "If set, compiles the project for development, otherwise for online production");
         $this->addOption("--test", NULL, InputOption::VALUE_NONE, "If set, compiles the project for testing, otherwise for online production");
+        $this->addOption("--confirm", NULL, InputOption::VALUE_NONE, "If set, you need to confirm the project before compiling starts");
 
         $this->addOption("--bootstrap", "-b", InputOption::VALUE_OPTIONAL, "The vendor's autoload.php file of your application", "vendor/autoload.php");
         $this->addOption("--search-path", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify search paths by using : delimiter (vendor:path/to/vendor)");
@@ -100,22 +104,27 @@ class CompileCommand extends Command
     {
         $project = $input->getOption("project");
         if(!$project) {
+            restart:
             $c = $this->io->choice("You did not specify any project information. Do you want to do manually or load a file?", [
                 "M" => 'manually',
-                'F' => 'use a config file'
+                'F' => 'use a config file',
+                "A" => "Abort"
             ], "manually");
 
             if($c == 'F') {
                 do {
                     $dir = $this->io->ask("Enter a configuration file");
                     if($dir == "")
-                        continue;
+                        break;
 
                     if(is_file(getcwd() . "/$dir"))
                         break;
                     $this->io->error("File $dir does not exist");
                 } while(true);
 
+                if(!$dir) {
+                    goto restart;
+                }
                 $input->setOption("project", $dir);
             } elseif($c == 'M') {
                 $title = $input->getOption("title") ?: $this->io->ask("Application's Global Title");
@@ -193,36 +202,123 @@ class CompileCommand extends Command
                 }
 
                 $input->setOption("app-host", $hosts);
+            } else {
+                exit(255);
             }
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        print_r($input->getOptions());
-
         $project = $input->getOption("project");
-        if(!$project) {
+        if(is_file(getcwd() . "/$project")) {
+            $exts = explode(".", $project);
+            $ext = array_pop($exts);
 
+            $loaderClassName = "Skyline\\Compiler\\Project\\Loader\\$ext";
+            if(!class_exists($loaderClassName)) {
+                $this->io->error("Skyline CMS Compiler can not load *.$ext project configuration files. Use another one or install the required project loader");
+                exit(8);
+            }
+
+            /** @var LoaderInterface $loader */
+            $loader = new $loaderClassName( getcwd() . "/$project" );
+            $project = $loader->getProject();
         } else {
+            $project = new Project();
+        }
 
+        if(!($project instanceof MutableProjectInterface)) {
+            $this->io->error("Could not load project instance");
+            exit(3);
+        }
+
+
+        InputProjectMerger::merge($project, $input);
+
+        if($input->isInteractive() && $input->getOption("confirm")) {
+            $this->io->section(sprintf("Project %s", $project->getAttribute(Attribute::TITLE_ATTR_NAME)));
+
+            $rows = [];
+            $rows[] = [
+                'Title',
+                $project->getAttribute(Attribute::TITLE_ATTR_NAME)
+            ];
+            $rows[] = [
+                'Description',
+                $project->getAttribute(Attribute::DESCRIPTION_ATTR_NAME)
+            ];
+            $rows[] = [
+                'DEV',
+                $input->getOption("dev") ? "YES" : "NO"
+            ];
+            $rows[] = [
+                'TEST',
+                $input->getOption("test") ? "YES" : "NO"
+            ];
+            $rows[] = [
+                'Data',
+                $project->getAttribute("data")
+            ];
+            $rows[] = [
+                'Public',
+                $project->getAttribute("public")
+            ];
+            $https = $project->getAttribute("HTTPS");
+            $rows[] = [
+                'HTTPS',
+                $https ? ($https->getValue() === true || $https->getValue() == 'y' ? "ON" : "OFF"): 'OFF'
+            ];
+
+            if($excl = $project->getAttribute("excluded")) {
+                $attrs = $excl->getAttributes();
+                $rows[] = ["***", "***"];
+
+                $rows[] = ["Excluded", array_shift($attrs)];
+                foreach($attrs as $attr)
+                    $rows[] = ["", $attr];
+            }
+
+            if($hosts = $project->getAttribute(Attribute::HOSTS_ATTR_NAME)) {
+                $attrs = $hosts->getAttributes();
+
+                $rows[] = ["***", "***"];
+
+                $rows[] = ["HOSTS", "ACCEPTS FROM ORIGIN"];
+
+                foreach($attrs as $name => $attr)
+                    $rows[] = [$name, implode(", ", $attr->getValue())];
+            }
+
+            /** @var SearchPathCollection $sps */
+            if($sps = $project->getAttribute(Attribute::SEARCH_PATHS_ATTR_NAME)) {
+                $rows[] = ["***", "***"];
+
+                $rows[] = ["SEARCH PATHS"];
+
+                foreach($sps->getValue() as $name => $paths) {
+                    $rows[] = [$name, array_shift($paths)];
+                    foreach($paths as $path)
+                        $rows[] = ["", $path];
+                }
+            }
+
+
+            $this->io->table(
+                ["Property", "Value"],
+                $rows
+            );
+
+            if(!$this->io->confirm("Compile this project?")) {
+                $this->io->note("User aborted");
+                exit(-10);
+            }
         }
 
         $dir = realpath($input->getArgument("project-directory")) ?? getcwd();
         $list = [];
         return;
-        foreach($searchPaths as $sp) {
-            if(strpos($sp, ":") == false) {
-                $this->io->note("Search path $sp should be formatted as: spname:path/to/directory/");
-                continue;
-            }
-            list($n, $p) = explode(":", $sp);
-            if(!is_dir(getcwd() . "/" . trim($p))) {
-                $this->io->error("Directory $p does not exist");
-                continue;
-            }
-            $list[trim($n)][] = getcwd() . "/" . trim($p);
-        }
+
         $searchPaths = $list;
     }
 }

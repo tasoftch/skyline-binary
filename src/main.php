@@ -43,6 +43,8 @@ ini_set("display_errors", 1);
 if(php_sapi_name() == 'cli') {
     spl_autoload_register(function($className) {
         $file = str_replace('Skyline\CLI\\', __DIR__ . "/App/", $className) . ".php";
+        $file = str_replace("\\", "/", $file);
+
         require $file;
     });
 
