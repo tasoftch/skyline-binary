@@ -31,9 +31,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+require "vendor/autoload.php";
 
-$phar = new \Phar('skyline.phar');
+if(file_exists('dist/skyline.phar'))
+    unlink('dist/skyline.phar');
+
+$phar = new \Phar('dist/skyline.phar');
+
 $phar->buildFromDirectory( 'src/' );
+
+$version = sprintf("Skyline CMS Binary %s", json_decode( file_get_contents("composer.json"), true )["version"]);
+$version = var_export($version, true);
 
 $phar->setStub("<?php
 /**
@@ -72,6 +80,7 @@ $phar->setStub("<?php
 Phar::mapPhar('skyline.phar');
 Phar::interceptFileFuncs();
 
-require(\"phar://skyline.phar/main.php\");
+define('APP_VERSION', $version);
 
+require(\"phar://skyline.phar/main.php\");
 __HALT_COMPILER();?>");

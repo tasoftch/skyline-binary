@@ -1,7 +1,9 @@
 {
   "name": "skyline/binary",
   "description": "The Skyline CMS Binary Project is distributed to help developers compiling and testing Skyline CMS Application.",
+  "version": "0.9.1",
   "license": "BSD-3-Clause",
+  "minimum-stability": "dev",
   "authors": [
     {
       "name": "Thomas Abplanalp",
@@ -10,10 +12,9 @@
   ],
   "require" : {
     "php": "^7.2",
-    "skyline/compiler": "dev-master"
-  },
-  "require-dev": {
-    "phpunit/phpunit": "^6"
+    "skyline/compiler": "dev-master",
+    "symfony/console": "dev-master",
+    "symfony/filesystem": "dev-master"
   },
   "scripts": {
     "build": "php -dphar.readonly=0 build.php"

@@ -32,25 +32,45 @@
  *
  */
 
-use Skyline\CLI\CompileCommand;
-use Skyline\CLI\MainCommand;
+namespace Skyline\CLI;
 
-require "vendor/autoload.php";
 
-ini_set("error_reporting", E_ALL);
-ini_set("display_errors", 1);
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
-if(php_sapi_name() == 'cli') {
-    spl_autoload_register(function($className) {
-        $file = str_replace('Skyline\CLI\\', __DIR__ . "/App/", $className) . ".php";
-        require $file;
-    });
+class MainCommand extends Command
+{
+    /** @var SymfonyStyle */
+    private $io;
 
-    $app = new Symfony\Component\Console\Application(APP_VERSION);
-    $app->add(new MainCommand());
-    $app->add(new CompileCommand());
+    private $buildInfo = [];
 
-    $app->setDefaultCommand("main");
+    protected function configure()
+    {
+        parent::configure();
+        $this->setName("main")
+            ->setDescription("Welcome Screen for Skyline CMS Application");
+    }
 
-    $app->run();
+    protected function initialize(InputInterface $input, OutputInterface $output) {
+        $this->io = new SymfonyStyle($input, $output);
+
+        $this->io->text(" _____  _  ____     __ _       _____  _   _  ______      _____  __  __   _____ 
+ / ____|| |/ /\ \   / /| |     |_   _|| \ | ||  ____|    / ____||  \/  | / ____|
+| (___  | ' /  \ \_/ / | |       | |  |  \| || |__      | |     | \  / || (___  
+ \___ \ |  <    \   /  | |       | |  | . ` ||  __|     | |     | |\/| | \___ \ 
+ ____) || . \    | |   | |____  _| |_ | |\  || |____    | |____ | |  | | ____) |
+|_____/ |_|\_\   |_|   |______||_____||_| \_||______|    \_____||_|  |_||_____/ 
+                         
+                      (c) 2019 by TASoft Applications
+                         
+");
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $this->getApplication()->get("list")->run($input, $output);
+    }
 }
