@@ -1,0 +1,17 @@
+{
+  "name": "skyline/binary",
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "Thomas Abplanalp",
+      "email": "info@tasoft.ch"
+    }
+  ],
+  "require" : {
+    "php": "^7.2",
+    "skyline/compiler": "dev-master"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^6"
+  }
+}
