@@ -57,7 +57,8 @@ class MainCommand extends Command
     protected function initialize(InputInterface $input, OutputInterface $output) {
         $this->io = new SymfonyStyle($input, $output);
 
-        $this->io->text(" _____  _  ____     __ _       _____  _   _  ______      _____  __  __   _____ 
+        $this->io->text("
+  _____  _  ____     __ _       _____  _   _  ______      _____  __  __   _____ 
  / ____|| |/ /\ \   / /| |     |_   _|| \ | ||  ____|    / ____||  \/  | / ____|
 | (___  | ' /  \ \_/ / | |       | |  |  \| || |__      | |     | \  / || (___  
  \___ \ |  <    \   /  | |       | |  | . ` ||  __|     | |     | |\/| | \___ \ 
