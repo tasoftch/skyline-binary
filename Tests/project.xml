@@ -68,4 +68,7 @@
         <REMOTE_ADDR mode="not">212.35.11.70</REMOTE_ADDR>
         <HTTP_HOST>admin.example.ch</HTTP_HOST>
     </filter>
+    <context>
+        <factory>Skyline\Compiler\Factory\CompleteWithPackagesCompilersFactory</factory>
+    </context>
 </project>
