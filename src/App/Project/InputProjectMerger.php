@@ -68,22 +68,5 @@ class InputProjectMerger
         if(!$project->hasAttribute('HTTPS') && $proj = $input->getOption("app-https")) {
             $project->setAttribute(new Attribute("HTTPS", $proj));
         }
-
-        /*
-        return;
-
-        foreach($searchPaths as $sp) {
-            if(strpos($sp, ":") == false) {
-                $this->io->note("Search path $sp should be formatted as: spname:path/to/directory/");
-                continue;
-            }
-            list($n, $p) = explode(":", $sp);
-            if(!is_dir(getcwd() . "/" . trim($p))) {
-                $this->io->error("Directory $p does not exist");
-                continue;
-            }
-            $list[trim($n)][] = getcwd() . "/" . trim($p);
-        }
-        */
     }
 }

@@ -64,6 +64,7 @@ class CompileCommand extends Command
         $this->addOption("--dev", NULL, InputOption::VALUE_NONE, "If set, compiles the project for development, otherwise for online production");
         $this->addOption("--test", NULL, InputOption::VALUE_NONE, "If set, compiles the project for testing, otherwise for online production");
         $this->addOption("--confirm", NULL, InputOption::VALUE_NONE, "If set, you need to confirm the project before compiling starts");
+        $this->addOption("--zero", NULL, InputOption::VALUE_NONE, "If set, path names are stored absolute");
 
         $this->addOption("--autoload", "-a", InputOption::VALUE_OPTIONAL, "The vendor's autoload.php file of your application", "vendor/autoload.php");
         $this->addOption("--search-path", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify search paths by using : delimiter (vendor:path/to/vendor)");
@@ -212,6 +213,10 @@ class CompileCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $input->getOption("project");
+        $zero = $input->getOption("zero") ? true : false;
+        if($output->getVerbosity() > $output::VERBOSITY_VERBOSE)
+            $this->io->text("** Use Zero links");
+
         if(is_file(getcwd() . "/$project")) {
             $exts = explode(".", $project);
             $ext = array_pop($exts);
@@ -221,6 +226,8 @@ class CompileCommand extends Command
                 $this->io->error("Skyline CMS Compiler can not load *.$ext project configuration files. Use another one or install the required project loader");
                 exit(8);
             }
+            if($output->getVerbosity() > $output::VERBOSITY_VERBOSE)
+                $this->io->text("** Loader Class: $loaderClassName");
 
             /** @var LoaderInterface $loader */
             $loader = new $loaderClassName( getcwd() . "/$project" );
@@ -240,6 +247,14 @@ class CompileCommand extends Command
         if($input->isInteractive() && $input->getOption("confirm")) {
             $this->io->section(sprintf("Project %s", $project->getAttribute(Attribute::TITLE_ATTR_NAME)));
 
+            $displayExistingFile = function($file) use ($zero) {
+                if(file_exists(getcwd() . "/$file")) {
+                    return sprintf("<fg=green>%s</>", $zero ? (realpath($file)) : $file);
+                } else {
+                    return sprintf("<fg=red>%s</>", $zero ? (realpath($file)) : $file);
+                }
+            };
+
             $rows = [];
             $rows[] = [
                 'Title',
@@ -258,12 +273,16 @@ class CompileCommand extends Command
                 $input->getOption("test") ? "YES" : "NO"
             ];
             $rows[] = [
+                'ROOT',
+                $displayExistingFile("./")
+            ];
+            $rows[] = [
                 'Data',
-                $project->getAttribute("data")
+                $displayExistingFile( $project->getAttribute("data") )
             ];
             $rows[] = [
                 'Public',
-                $project->getAttribute("public")
+                $displayExistingFile( $project->getAttribute("public") ?: "./" )
             ];
             $https = $project->getAttribute("HTTPS");
             $rows[] = [
@@ -305,13 +324,15 @@ class CompileCommand extends Command
 
                 $rows[] = ["SEARCH PATHS"];
 
+                $addPath = function($path, $name = "") use (&$rows, $displayExistingFile) {
+                    $rows[] = [$name, $displayExistingFile($path)];
+                };
+
                 foreach($sps->getValue() as $name => $paths) {
-                    $rows[] = [$name, array_shift($paths)];
+                    $addPath(array_shift($paths), $name);
+
                     foreach($paths as $path) {
-                        if(is_dir(getcwd() . "/$path"))
-                            $rows[] = ["", "<fg=red>$path</>"];
-                        else
-                            $rows[] = ["", "<fg=red>$path</>"];
+                        $addPath($path);
                     }
 
                 }
