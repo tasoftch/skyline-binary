@@ -215,7 +215,7 @@ class CompileCommand extends Command
             $exts = explode(".", $project);
             $ext = array_pop($exts);
 
-            $loaderClassName = "Skyline\\Compiler\\Project\\Loader\\$ext";
+            $loaderClassName = "Skyline\\Compiler\\Project\\Loader\\" . strtoupper($ext);
             if(!class_exists($loaderClassName)) {
                 $this->io->error("Skyline CMS Compiler can not load *.$ext project configuration files. Use another one or install the required project loader");
                 exit(8);
