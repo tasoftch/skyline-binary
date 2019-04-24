@@ -35,19 +35,19 @@
 use Skyline\CLI\CompileCommand;
 use Skyline\CLI\MainCommand;
 
-require "vendor/autoload.php";
+spl_autoload_register(function($className) {
+    $file = str_replace('Skyline\CLI\\', __DIR__ . "/App/", $className) . ".php";
+    $file = str_replace("\\", "/", $file);
+
+    require $file;
+});
+
+require "phar://skyline.phar/vendor/autoload.php";
 
 ini_set("error_reporting", E_ALL);
 ini_set("display_errors", 1);
 
 if(php_sapi_name() == 'cli') {
-    spl_autoload_register(function($className) {
-        $file = str_replace('Skyline\CLI\\', __DIR__ . "/App/", $className) . ".php";
-        $file = str_replace("\\", "/", $file);
-
-        require $file;
-    });
-
     $app = new Symfony\Component\Console\Application(APP_VERSION);
     $app->add(new MainCommand());
     $app->add(new CompileCommand());

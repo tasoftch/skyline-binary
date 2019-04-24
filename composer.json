@@ -12,11 +12,17 @@
   ],
   "require" : {
     "php": "^7.2",
-    "skyline/compiler": "dev-master",
-    "symfony/console": "dev-master",
-    "symfony/filesystem": "dev-master"
+    "symfony/filesystem": "dev-master",
+    "symfony/console": "dev-master"
+  },
+  "require-dev": {
+    "ext-json": "*",
+    "skyline/compiler": "dev-master"
   },
   "scripts": {
     "build": "php -dphar.readonly=0 build.php"
-  }
+  },
+  "bin": [
+    "dist/skyline.phar"
+  ]
 }

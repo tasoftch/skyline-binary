@@ -64,7 +64,7 @@ class CompileCommand extends Command
         $this->addOption("--test", NULL, InputOption::VALUE_NONE, "If set, compiles the project for testing, otherwise for online production");
         $this->addOption("--confirm", NULL, InputOption::VALUE_NONE, "If set, you need to confirm the project before compiling starts");
 
-        $this->addOption("--bootstrap", "-b", InputOption::VALUE_OPTIONAL, "The vendor's autoload.php file of your application", "vendor/autoload.php");
+        $this->addOption("--autoload", "-a", InputOption::VALUE_OPTIONAL, "The vendor's autoload.php file of your application", "vendor/autoload.php");
         $this->addOption("--search-path", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify search paths by using : delimiter (vendor:path/to/vendor)");
 
         $this->addOption("--exclude", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify directories (or files) with glob pattern which should not be included.");
@@ -89,11 +89,11 @@ class CompileCommand extends Command
     {
         $this->io = new SymfonyStyle($input, $output);
 
-        if($bs = $input->getOption("bootstrap")) {
+        if($bs = $input->getOption("autoload")) {
             $bs = getcwd() . "/$bs";
 
             if(!is_file($bs)) {
-                $this->io->error("Bootstrap file $bs not found.");
+                $this->io->error("Autoload file $bs not found.");
                 die();
             }
             require $bs;
@@ -315,10 +315,6 @@ class CompileCommand extends Command
             }
         }
 
-        $dir = realpath($input->getArgument("project-directory")) ?? getcwd();
-        $list = [];
-        return;
 
-        $searchPaths = $list;
     }
 }

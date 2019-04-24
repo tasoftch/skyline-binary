@@ -31,12 +31,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+use Symfony\Component\Filesystem\Filesystem;
+
 require "vendor/autoload.php";
 
 if(file_exists('dist/skyline.phar'))
     unlink('dist/skyline.phar');
 
-$phar = new \Phar('dist/skyline.phar');
+$phar = new Phar('dist/skyline.phar');
+
+if(in_array('--copy' , $argv)) {
+    $fs = new Filesystem();
+    $fs->mirror("vendor/symfony", "src/vendor/symfony");
+    $fs->copy("vendor/autoload.php", "src/vendor/autoload.php");
+    $fs->mirror("vendor/composer", "src/vendor/composer");
+}
+
 
 $phar->buildFromDirectory( 'src/' );
 
