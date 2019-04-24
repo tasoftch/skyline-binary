@@ -37,6 +37,7 @@ namespace Skyline\CLI;
 
 use Skyline\CLI\Project\InputProjectMerger;
 use Skyline\Compiler\Project\Attribute\Attribute;
+use Skyline\Compiler\Project\Attribute\AttributeCollection;
 use Skyline\Compiler\Project\Attribute\SearchPathCollection;
 use Skyline\Compiler\Project\Loader\LoaderInterface;
 use Skyline\Compiler\Project\MutableProjectInterface;
@@ -271,7 +272,15 @@ class CompileCommand extends Command
             ];
 
             if($excl = $project->getAttribute("excluded")) {
-                $attrs = $excl->getAttributes();
+                if($excl instanceof AttributeCollection)
+                    $attrs = $excl->getAttributes();
+                else {
+                    $attrs = explode(",", $excl->getValue());
+                    foreach($attrs as $idx => &$value) {
+                        $value = new Attribute($idx, trim($value));
+                    }
+                }
+
                 $rows[] = ["***", "***"];
 
                 $rows[] = ["Excluded", array_shift($attrs)];
@@ -298,8 +307,13 @@ class CompileCommand extends Command
 
                 foreach($sps->getValue() as $name => $paths) {
                     $rows[] = [$name, array_shift($paths)];
-                    foreach($paths as $path)
-                        $rows[] = ["", $path];
+                    foreach($paths as $path) {
+                        if(is_dir(getcwd() . "/$path"))
+                            $rows[] = ["", "<fg=red>$path</>"];
+                        else
+                            $rows[] = ["", "<fg=red>$path</>"];
+                    }
+
                 }
             }
 
