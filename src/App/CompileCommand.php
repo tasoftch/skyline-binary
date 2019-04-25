@@ -396,6 +396,8 @@ class CompileCommand extends Command
                 $context->compile(function(CompilerInterface $compiler) {
                     $this->io->section($compiler->getCompilerName());
                 });
+
+                $this->io->success("Compilation completed!");
             }
         }
     }
