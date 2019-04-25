@@ -43,7 +43,6 @@ use Skyline\Compiler\Project\Loader\LoaderInterface;
 use Skyline\Compiler\Project\MutableProjectInterface;
 use Skyline\Compiler\Project\Project;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -58,8 +57,6 @@ class CompileCommand extends Command
     {
         $this->setName("compile")
             ->setDescription("Command line tool to run the Skyline CMS Compiler");
-
-        $this->addArgument("project-directory", InputArgument::OPTIONAL, "The project directory which is to compile", "./");
 
         $this->addOption("--dev", NULL, InputOption::VALUE_NONE, "If set, compiles the project for development, otherwise for online production");
         $this->addOption("--test", NULL, InputOption::VALUE_NONE, "If set, compiles the project for testing, otherwise for online production");
@@ -241,8 +238,8 @@ class CompileCommand extends Command
             exit(3);
         }
 
-
         InputProjectMerger::merge($project, $input);
+
 
         if($input->isInteractive() && $input->getOption("confirm")) {
             $this->io->section(sprintf("Project %s", $project->getAttribute(Attribute::TITLE_ATTR_NAME)));
@@ -349,7 +346,5 @@ class CompileCommand extends Command
                 exit(-10);
             }
         }
-
-
     }
 }

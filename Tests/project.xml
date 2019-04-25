@@ -33,7 +33,6 @@
   -->
 <project class="\Skyline\Compiler\Project\Project">
     <arguments />
-    <directory>./</directory>
     <attributes>
         <attr name="title">Test Website</attr>
         <attr name="description">Test Website Description</attr>
