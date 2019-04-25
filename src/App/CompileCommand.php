@@ -393,7 +393,9 @@ class CompileCommand extends Command
                 $this->io->warning("Not implemented yet!");
                 exit(-10);
             }else {
-                $context->compile();
+                $context->compile(function(CompilerInterface $compiler) {
+                    $this->io->section($compiler->getCompilerName());
+                });
             }
         }
     }

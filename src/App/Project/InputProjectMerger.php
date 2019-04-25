@@ -58,8 +58,8 @@ class InputProjectMerger
             $project->setAttribute(new Attribute(Attribute::DESCRIPTION_ATTR_NAME, $proj));
         }
 
-        if(!$project->hasAttribute(Attribute::APP_ROOT_NAME) && $proj = $input->getOption("app-dir")) {
-            $project->setAttribute(new Attribute(Attribute::APP_ROOT_NAME, $proj));
+        if(!$project->hasAttribute(Attribute::APP_ROOT_ATTR_NAME) && $proj = $input->getOption("app-dir")) {
+            $project->setAttribute(new Attribute(Attribute::APP_ROOT_ATTR_NAME, $proj));
         }
 
         if(!$project->hasAttribute('excluded') && $proj = $input->getOption("exclude")) {
