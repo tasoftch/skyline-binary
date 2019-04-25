@@ -36,8 +36,13 @@ namespace Skyline\CLI;
 
 
 use Skyline\CLI\Project\InputProjectMerger;
+use Skyline\Compiler\CompilerContext;
+use Skyline\Compiler\CompilerFactoryInterface;
+use Skyline\Compiler\CompilerInterface;
+use Skyline\Compiler\Factory\CompleteWithPackagesCompilersFactory;
 use Skyline\Compiler\Project\Attribute\Attribute;
 use Skyline\Compiler\Project\Attribute\AttributeCollection;
+use Skyline\Compiler\Project\Attribute\CompilerContextParameterCollection;
 use Skyline\Compiler\Project\Attribute\SearchPathCollection;
 use Skyline\Compiler\Project\Loader\LoaderInterface;
 use Skyline\Compiler\Project\MutableProjectInterface;
@@ -240,6 +245,29 @@ class CompileCommand extends Command
 
         InputProjectMerger::merge($project, $input);
 
+        /** @var CompilerContextParameterCollection $ctxAttr */
+        $ctxAttr = $project->getAttribute("context");
+        if(!($ctxAttr instanceof CompilerContextParameterCollection))
+            $ctxAttr = new CompilerContextParameterCollection("context");
+
+        $ctxClass = $ctxAttr->getContextClass();
+        /** @var CompilerContext $context */
+        $context = new $ctxClass($project);
+        $context->setContextParameters( $ctxAttr );
+
+        if(!($factories = $ctxAttr->getCompilerFactories())) {
+            $factories[] = CompleteWithPackagesCompilersFactory::class;
+        }
+
+        foreach($factories as $factory) {
+            if(is_string($factory))
+                $factory = new $factory;
+
+            if($factory instanceof CompilerFactoryInterface || $factory instanceof CompilerInterface)
+                $context->addCompiler($factory);
+        }
+
+        $context->setLogger( new ConsoleLogger($this->io) );
 
         if($input->isInteractive() && $input->getOption("confirm")) {
             $this->io->section(sprintf("Project %s", $project->getAttribute(Attribute::TITLE_ATTR_NAME)));
@@ -331,7 +359,6 @@ class CompileCommand extends Command
                     foreach($paths as $path) {
                         $addPath($path);
                     }
-
                 }
             }
 
@@ -341,9 +368,32 @@ class CompileCommand extends Command
                 $rows
             );
 
-            if(!$this->io->confirm("Compile this project?")) {
-                $this->io->note("User aborted");
+            $rows = [];
+
+            /** @var CompilerInterface $compiler */
+            foreach($context->getOrganizedCompilers() as $compiler) {
+                $rows[] = [$compiler->getCompilerName(), get_class($compiler)];
+            }
+
+            $this->io->table(
+                ["Compiler", "Class"],
+                $rows
+            );
+
+            $mode = $this->io->choice("Continue?", [
+                "y" => "Yes",
+                "m" => "Modify (Not yet implemented)", // TODO: Implement modification after confirm
+                "a" => "Abort"
+            ], "Yes");
+
+            if($mode == 'a') {
+                $this->io->error("User aborted");
                 exit(-10);
+            }elseif($mode == 'm') {
+                $this->io->warning("Not implemented yet!");
+                exit(-10);
+            }else {
+                $context->compile();
             }
         }
     }
