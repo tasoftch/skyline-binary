@@ -256,7 +256,10 @@ class CompileCommand extends Command
         /** @var CompilerContext $context */
         $context = new $ctxClass($project);
         $context->setContextParameters( $ctxAttr );
+
         $context->getConfiguration()[CompilerConfiguration::COMPILER_ZERO_LINKS] = $zero;
+        $context->getConfiguration()[CompilerConfiguration::COMPILER_TEST] = $input->getOption("test");
+        $context->getConfiguration()[CompilerConfiguration::COMPILER_DEBUG] = $input->getOption("dev");
 
 
         if(!($factories = $ctxAttr->getCompilerFactories())) {
