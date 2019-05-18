@@ -32,31 +32,39 @@
  *
  */
 
-use Skyline\CLI\BootstrapCommand;
-use Skyline\CLI\CompileCommand;
-use Skyline\CLI\CreateProjectCommand;
-use Skyline\CLI\MainCommand;
+namespace Skyline\CLI;
 
-spl_autoload_register(function($className) {
-    $file = str_replace('Skyline\CLI\\', __DIR__ . "/App/", $className) . ".php";
-    $file = str_replace("\\", "/", $file);
 
-    require $file;
-});
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
-require "phar://skyline.phar/vendor/autoload.php";
+class BootstrapCommand extends Command
+{
+    /** @var SymfonyStyle */
+    private $io;
 
-ini_set("error_reporting", E_ALL);
-ini_set("display_errors", 1);
+    protected function configure()
+    {
+        $this->setName("bootstrap")
+            ->setDescription("Bootstraps your Skyline CMS Application");
 
-if(php_sapi_name() == 'cli') {
-    $app = new Symfony\Component\Console\Application(APP_VERSION);
-    $app->add(new MainCommand());
-    $app->add(new CompileCommand());
-    //$app->add(new CreateProjectCommand());
-    $app->add(new BootstrapCommand());
 
-    $app->setDefaultCommand("main");
+    }
 
-    $app->run();
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->io = new SymfonyStyle($input, $output);
+    }
+
+    protected function interact(InputInterface $input, OutputInterface $output)
+    {
+
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+
+    }
 }
