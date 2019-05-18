@@ -40,6 +40,8 @@ use Skyline\Compiler\CompilerConfiguration;
 use Skyline\Compiler\CompilerContext;
 use Skyline\Compiler\CompilerFactoryInterface;
 use Skyline\Compiler\CompilerInterface;
+use Skyline\Compiler\Context\Code\Pattern;
+use Skyline\Compiler\Context\Code\PatternExcludingSourceCodeManager;
 use Skyline\Compiler\Factory\CompleteWithPackagesCompilersFactory;
 use Skyline\Compiler\Project\Attribute\Attribute;
 use Skyline\Compiler\Project\Attribute\AttributeCollection;
@@ -261,6 +263,21 @@ class CompileCommand extends Command
         $context->getConfiguration()[CompilerConfiguration::COMPILER_TEST] = $input->getOption("test");
         $context->getConfiguration()[CompilerConfiguration::COMPILER_DEBUG] = $input->getOption("dev");
 
+        if($excludedPathItems = $project->getAttribute("excluded")) {
+            if($excludedPathItems instanceof AttributeCollection)
+                $excludedPathItems = $excludedPathItems->getAttributes();
+            else {
+                $excludedPathItems = explode(",", $excludedPathItems->getValue());
+                foreach($excludedPathItems as $idx => &$value) {
+                    $value = new Attribute($idx, trim($value));
+                }
+            }
+            $ce = new PatternExcludingSourceCodeManager($context);
+            foreach($excludedPathItems as $item) {
+                $ce->addPattern( new Pattern( $item->getValue() ) );
+            }
+        }
+
 
         if(!($factories = $ctxAttr->getCompilerFactories())) {
             $factories[] = CompleteWithPackagesCompilersFactory::class;
@@ -322,20 +339,11 @@ class CompileCommand extends Command
                 $https ? ($https->getValue() === true || $https->getValue() == 'y' ? "ON" : "OFF"): 'OFF'
             ];
 
-            if($excl = $project->getAttribute("excluded")) {
-                if($excl instanceof AttributeCollection)
-                    $attrs = $excl->getAttributes();
-                else {
-                    $attrs = explode(",", $excl->getValue());
-                    foreach($attrs as $idx => &$value) {
-                        $value = new Attribute($idx, trim($value));
-                    }
-                }
-
+            if($excludedPathItems) {
                 $rows[] = ["***", "***"];
 
-                $rows[] = ["Excluded", array_shift($attrs)];
-                foreach($attrs as $attr)
+                $rows[] = ["Excluded", array_shift($excludedPathItems)];
+                foreach($excludedPathItems as $attr)
                     $rows[] = ["", $attr];
             }
 
