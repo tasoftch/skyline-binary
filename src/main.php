@@ -34,12 +34,17 @@
 
 use Skyline\CLI\BootstrapCommand;
 use Skyline\CLI\CompileCommand;
-use Skyline\CLI\CreateProjectCommand;
 use Skyline\CLI\MainCommand;
+use Skyline\CLI\ServerCommand;
+
+if (preg_match("/server/i", php_sapi_name())) {
+    require $_SERVER["DOCUMENT_ROOT"] . DIRECTORY_SEPARATOR . "skyline.php";
+    exit();
+}
 
 spl_autoload_register(function($className) {
-    $file = str_replace('Skyline\CLI\\', __DIR__ . "/App/", $className) . ".php";
-    $file = str_replace("\\", "/", $file);
+    $file = str_replace('Skyline\CLI\\', __DIR__ . DIRECTORY_SEPARATOR . "App" . DIRECTORY_SEPARATOR, $className) . ".php";
+    $file = str_replace("\\", DIRECTORY_SEPARATOR, $file);
 
     require $file;
 });
@@ -53,6 +58,7 @@ if(php_sapi_name() == 'cli') {
     $app = new Symfony\Component\Console\Application(APP_VERSION);
     $app->add(new MainCommand());
     $app->add(new CompileCommand());
+    $app->add(new ServerCommand());
     //$app->add(new CreateProjectCommand());
     $app->add(new BootstrapCommand());
 

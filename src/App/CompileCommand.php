@@ -36,6 +36,7 @@ namespace Skyline\CLI;
 
 
 use Skyline\CLI\Project\InputProjectMerger;
+use Skyline\Compiler\CompilerConfiguration;
 use Skyline\Compiler\CompilerContext;
 use Skyline\Compiler\CompilerFactoryInterface;
 use Skyline\Compiler\CompilerInterface;
@@ -215,8 +216,9 @@ class CompileCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $project = $input->getOption("project");
+
         $zero = $input->getOption("zero") ? true : false;
-        if($output->getVerbosity() > $output::VERBOSITY_VERBOSE)
+        if($zero && $output->getVerbosity() > $output::VERBOSITY_VERBOSE)
             $this->io->text("** Use Zero links");
 
         if(is_file(getcwd() . "/$project")) {
@@ -254,6 +256,8 @@ class CompileCommand extends Command
         /** @var CompilerContext $context */
         $context = new $ctxClass($project);
         $context->setContextParameters( $ctxAttr );
+        $context->getConfiguration()[CompilerConfiguration::COMPILER_ZERO_LINKS] = $zero;
+
 
         if(!($factories = $ctxAttr->getCompilerFactories())) {
             $factories[] = CompleteWithPackagesCompilersFactory::class;
