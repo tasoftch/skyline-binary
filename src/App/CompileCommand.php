@@ -276,6 +276,7 @@ class CompileCommand extends Command
             foreach($excludedPathItems as $item) {
                 $ce->addPattern( new Pattern( $item->getValue() ) );
             }
+            $context->setSourceCodeManager($ce);
         }
 
 
