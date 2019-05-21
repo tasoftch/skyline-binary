@@ -59,7 +59,6 @@ if(php_sapi_name() == 'cli') {
     $app->add(new MainCommand());
     $app->add(new CompileCommand());
     $app->add(new ServerCommand());
-    //$app->add(new CreateProjectCommand());
     $app->add(new BootstrapCommand());
 
     $app->setDefaultCommand("main");
