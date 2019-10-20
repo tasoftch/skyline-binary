@@ -70,6 +70,7 @@ class CompileCommand extends Command
         $this->addOption("--test", NULL, InputOption::VALUE_NONE, "If set, compiles the project for testing, otherwise for online production");
         $this->addOption("--confirm", NULL, InputOption::VALUE_NONE, "If set, you need to confirm the project before compiling starts");
         $this->addOption("--zero", NULL, InputOption::VALUE_NONE, "If set, path names are stored absolute");
+        $this->addOption("--with-pdo", NULL, InputOption::VALUE_NONE, "Compiler resolves required PDO and tries to setup data bases correctly.");
 
         $this->addOption("--autoload", "-a", InputOption::VALUE_OPTIONAL, "The vendor's autoload.php file of your application", "vendor/autoload.php");
         $this->addOption("--search-path", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify search paths by using : delimiter (vendor:path/to/vendor)");
@@ -91,7 +92,7 @@ class CompileCommand extends Command
         $this->addOption("--app-host", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify all hosts that Skyline CMS should grant access to resource files");
         $this->addOption("--app-https", NULL, InputOption::VALUE_OPTIONAL, "Compiled application will redirect incoming requests to HTTPS if needed");
 
-        $this->addOption("--with-pdo", NULL, InputOption::VALUE_OPTIONAL, "Compiler resolves required PDO and tries to setup data bases correctly.");
+
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
