@@ -12,11 +12,11 @@
   ],
   "require" : {
     "php": "^7.2",
-    "ext-sockets": "*",
     "skyline/compiler": "dev-master"
   },
   "require-dev": {
     "ext-json": "*",
+    "ext-sockets": "*",
     "symfony/filesystem": "dev-master",
     "symfony/console": "dev-master"
   },
