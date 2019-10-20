@@ -90,6 +90,8 @@ class CompileCommand extends Command
         $this->addOption("--app-dir", NULL, InputOption::VALUE_OPTIONAL, "Specify where the running application finds the project root (from public directory)");
         $this->addOption("--app-host", NULL, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Specify all hosts that Skyline CMS should grant access to resource files");
         $this->addOption("--app-https", NULL, InputOption::VALUE_OPTIONAL, "Compiled application will redirect incoming requests to HTTPS if needed");
+
+        $this->addOption("--with-pdo", NULL, InputOption::VALUE_OPTIONAL, "Compiler resolves required PDO and tries to setup data bases correctly.");
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -262,6 +264,7 @@ class CompileCommand extends Command
         $context->getConfiguration()[CompilerConfiguration::COMPILER_ZERO_LINKS] = $zero;
         $context->getConfiguration()[CompilerConfiguration::COMPILER_TEST] = $input->getOption("test");
         $context->getConfiguration()[CompilerConfiguration::COMPILER_DEBUG] = $input->getOption("dev");
+        $context->getConfiguration()[CompilerConfiguration::COMPILER_WITH_PDO] = $input->getOption("with-pdo");
 
         if($excludedPathItems = $project->getAttribute("excluded")) {
             if($excludedPathItems instanceof AttributeCollection)
