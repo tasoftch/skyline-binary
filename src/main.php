@@ -46,7 +46,11 @@ spl_autoload_register(function($className) {
     $file = str_replace('Skyline\CLI\\', __DIR__ . DIRECTORY_SEPARATOR . "App" . DIRECTORY_SEPARATOR, $className) . ".php";
     $file = str_replace("\\", DIRECTORY_SEPARATOR, $file);
 
-    require $file;
+    if(is_file($file)) {
+        require $file;
+        return true;
+    }
+    return false;
 });
 
 require "phar://skyline.phar/vendor/autoload.php";
