@@ -35,6 +35,7 @@
 use Skyline\CLI\BootstrapCommand;
 use Skyline\CLI\CompileCommand;
 use Skyline\CLI\MainCommand;
+use Skyline\CLI\RouteCommand;
 use Skyline\CLI\ServerCommand;
 
 if (preg_match("/server/i", php_sapi_name())) {
@@ -53,17 +54,18 @@ spl_autoload_register(function($className) {
     return false;
 });
 
-require "phar://skyline.phar/vendor/autoload.php";
+require "vendor/autoload.php";
 
 ini_set("error_reporting", E_ALL);
 ini_set("display_errors", 1);
 
 if(php_sapi_name() == 'cli') {
-    $app = new Symfony\Component\Console\Application(APP_VERSION);
+    $app = new Symfony\Component\Console\Application(defined('APP_VERSION') ? APP_VERSION : "1.0");
     $app->add(new MainCommand());
     $app->add(new CompileCommand());
     $app->add(new ServerCommand());
     $app->add(new BootstrapCommand());
+    $app->add(new RouteCommand());
 
     $app->setDefaultCommand("main");
 
