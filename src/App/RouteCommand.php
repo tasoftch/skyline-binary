@@ -179,16 +179,28 @@ class RouteCommand extends AbstractSkylineCommand
 		$actionDescription = $event->getActionDescription();
 
 		$data = [
-			'Controller' => $actionDescription->getActionControllerClass(),
-			'Method' => $actionDescription->getMethodName()
+			[
+				"Controller",
+				$actionDescription->getActionControllerClass()
+			],
+			[
+				'Method',
+				$actionDescription->getMethodName()
+			]
 		];
 
 		if($actionDescription instanceof RegexActionDescription) {
-			$data["Captures"] = $actionDescription->getCaptures();
+			$data[] = [
+				"Captures",
+				$actionDescription->getCaptures()
+			];
 		}
 
 		if($actionDescription instanceof RenderActionDescription || $actionDescription instanceof RegexRenderActionDescription)
-			$data["Render"] = $actionDescription->getRenderName();
+			$data[] = [
+				'Render',
+				$actionDescription->getRenderName()
+			];
 
 		$this->io->table([
 			"Attribute",
