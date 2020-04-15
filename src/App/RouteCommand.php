@@ -192,7 +192,7 @@ class RouteCommand extends AbstractSkylineCommand
 		if($actionDescription instanceof RegexActionDescription) {
 			$data[] = [
 				"Captures",
-				$actionDescription->getCaptures()
+				implode(", ", $actionDescription->getCaptures())
 			];
 		}
 
