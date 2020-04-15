@@ -54,7 +54,7 @@ spl_autoload_register(function($className) {
     return false;
 });
 
-require "vendor/autoload.php";
+require "phar://skyline.phar/vendor/autoload.php";
 
 ini_set("error_reporting", E_ALL);
 ini_set("display_errors", 1);
