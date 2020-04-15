@@ -18,7 +18,8 @@
     "ext-json": "*",
     "ext-sockets": "*",
     "symfony/filesystem": "dev-master",
-    "symfony/console": "dev-master"
+    "symfony/console": "dev-master",
+    "skyline/core-application": "dev-master"
   },
   "scripts": {
     "build": "php -dphar.readonly=0 build.php"

@@ -34,10 +34,21 @@
 
 namespace Skyline\CLI;
 
+use Skyline\Application\Exception\UnresolvedRouteException;
+use Skyline\Kernel\Config\MainKernelConfig;
+use Skyline\Kernel\Config\PluginConfig;
+use Skyline\Render\Router\Description\MutableRegexRenderActionDescription;
+use Skyline\Render\Router\Description\RegexRenderActionDescription;
+use Skyline\Render\Router\Description\RenderActionDescription;
+use Skyline\Router\Description\RegexActionDescription;
+use Skyline\Router\Event\HTTPRequestRouteEvent;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\HttpFoundation\Request;
+use TASoft\EventManager\SectionEventManager;
+use TASoft\Service\ServiceManager;
 
 class RouteCommand extends AbstractSkylineCommand
 {
@@ -48,7 +59,7 @@ class RouteCommand extends AbstractSkylineCommand
 		$this->setDescription("Routes a given request to a controller and its method")
 			->setName("route")
 			->addArgument("URI", InputArgument::REQUIRED, 'The request URI')
-			->addOption("header", 'd', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'HTTP headers (ex: --header Content-Type:text/html');
+			->addOption("content-type", 't', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'HTTP headers (ex: --content-type \'text/html;q=0.9\'');
 	}
 
 	protected function interact(InputInterface $input, OutputInterface $output)
@@ -59,26 +70,48 @@ class RouteCommand extends AbstractSkylineCommand
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
 		$URI = $input->getArgument("URI");
-		$URL = parse_url($URI);
+		$url = parse_url($URI);
+		$url["scheme"] = $url["scheme"] ?? 'http';
+
+		$appData = $input->getOption("app-data");
+
+
+
+		$SERVER = [
+			"HTTP_HOST" => $url["host"],
+			"SERVER_ADDR" => $url["port"] ?? ($url["scheme"] == 'https' ? 443 : 80)
+		];
+
+		if($cts = $input->getOption("content-type")) {
+			$SERVER["HTTP_ACCEPT"] = implode(",", $cts);
+		}
+
+		if($url["scheme"] == 'https')
+			$SERVER["HTTPS"] = 'on';
+
+		$REQUEST = Request::create($url['path'], 'GET', [], [], [], $SERVER);
+
+		$serviceManager = NULL;
+
 
 		if($output->isDebug()) {
 			$this->io->title("Request");
 			$data = [
 				[
 					'Scheme',
-					$URL["scheme"] ?? 'http'
+					$REQUEST->getScheme()
 				],
 				[
 					'Host',
-					$URL["host"] ?? 'localhost'
+					$REQUEST->getHost()
 				],
 				[
 					'Port',
-					$URL["port"] ?? '80'
+					$REQUEST->getPort()
 				],
 				[
 					'Path',
-					$URL["path"] ?? '/'
+					$REQUEST->getRequestUri()
 				],
 			];
 
@@ -99,7 +132,68 @@ class RouteCommand extends AbstractSkylineCommand
 			], $data);
 		}
 
+		$config = @include "$appData/Compiled/main.config.php";
+		if(!$config) {
+			throw new \RuntimeException("Can not read main configuration.");
+		}
 
+		$parameters = require "$appData/Compiled/parameters.config.php";
+		if(!$parameters) {
+			$parameters = [];
+			trigger_error("Can not read parameters.", E_USER_WARNING);
+		}
+
+		global $_MAIN_CONFIGURATION;
+		$_MAIN_CONFIGURATION = $config;
+
+		ServiceManager::rejectGeneralServiceManager();
+		$serviceManager = ServiceManager::generalServiceManager($config[ MainKernelConfig::CONFIG_SERVICES ]);
+
+		foreach($parameters as $parameterName => $parameterValue)
+			$serviceManager->setParameter($parameterName, $parameterValue);
+
+		$serviceManager->addCustomArgumentHandler(function($key, $value) {
+			if(is_string($value) && strpos($value, '$(') !== false)
+				return SkyGetPath($value, false);
+			return $value;
+		}, "LOCATIONS");
+
+		$event = new HTTPRequestRouteEvent($REQUEST);
+		$event->setActionDescription(new MutableRegexRenderActionDescription());
+
+		$serviceManager->set("request", $request = method_exists($event, 'getRequest') && ($r = $event->getRequest()) ? $r : Request::createFromGlobals());
+
+
+		/** @var SectionEventManager $eventManager */
+		$eventManager = $serviceManager->get( MainKernelConfig::SERVICE_EVENT_MANAGER );
+
+
+		if(!$eventManager->triggerSection( PluginConfig::EVENT_SECTION_ROUTING, SKY_EVENT_ROUTE, $event )->isPropagationStopped()) {
+			$e = new UnresolvedRouteException("Could not resolve route", 404);
+			$e->setRouteEvent($event);
+			throw $e;
+		}
+
+		$this->io->title("Result");
+
+		$actionDescription = $event->getActionDescription();
+
+		$data = [
+			'Controller' => $actionDescription->getActionControllerClass(),
+			'Method' => $actionDescription->getMethodName()
+		];
+
+		if($actionDescription instanceof RegexActionDescription) {
+			$data["Captures"] = $actionDescription->getCaptures();
+		}
+
+		if($actionDescription instanceof RenderActionDescription || $actionDescription instanceof RegexRenderActionDescription)
+			$data["Render"] = $actionDescription->getRenderName();
+
+		$this->io->table([
+			"Attribute",
+			"Value"
+		], $data);
 
 		return 0;
 	}
