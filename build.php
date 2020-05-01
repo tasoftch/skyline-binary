@@ -51,9 +51,6 @@ if(in_array('--copy' , $argv)) {
 
 $phar->buildFromDirectory( 'src/' );
 
-$version = sprintf("Skyline CMS Binary %s", json_decode( file_get_contents("composer.json"), true )["version"]);
-$version = var_export($version, true);
-
 $phar->setStub("<?php
 /**
  * BSD 3-Clause License
@@ -91,7 +88,7 @@ $phar->setStub("<?php
 Phar::mapPhar('skyline.phar');
 Phar::interceptFileFuncs();
 
-define('APP_VERSION', $version);
+define('APP_VERSION', '0.8.2');
 
 require(\"phar://skyline.phar/main.php\");
 __HALT_COMPILER();?>");
