@@ -34,6 +34,7 @@
 
 use Skyline\CLI\BootstrapCommand;
 use Skyline\CLI\CompileCommand;
+use Skyline\CLI\FindTranslationsCommand;
 use Skyline\CLI\MainCommand;
 use Skyline\CLI\RouteCommand;
 use Skyline\CLI\ServerCommand;
@@ -66,6 +67,19 @@ if(php_sapi_name() == 'cli') {
     $app->add(new ServerCommand());
     $app->add(new BootstrapCommand());
     $app->add(new RouteCommand());
+
+    // getcwd is required because this file gets executed under mapped phar.
+    if(file_exists($autoloader = getcwd() . "/vendor/autoload.php")) {
+    	// Autoloads the current project
+		require $autoloader;
+
+		if(is_file($commands = getcwd() . "/SkylineAppData/Compiled/commands.config.php")) {
+			$commands = require $commands;
+			foreach($commands as $command) {
+				$app->add( new $command );
+			}
+		}
+	}
 
     $app->setDefaultCommand("main");
 
