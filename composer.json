@@ -20,7 +20,7 @@
     "skyline/core-application": "^0.8"
   },
   "scripts": {
-    "build": "php -dphar.readonly=0 build.php --copy"
+    "build": "php -dphar.readonly=0 build.php"
   },
   "bin": [
     "dist/skyline.phar"

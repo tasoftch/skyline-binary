@@ -64,7 +64,7 @@ if(php_sapi_name() == 'cli') {
     $app = new Symfony\Component\Console\Application(defined('APP_VERSION') ? APP_VERSION : "1.0");
     $app->add(new MainCommand());
     $app->add(new CompileCommand());
-    $app->add(new ServerCommand());
+    //$app->add(new ServerCommand());
     $app->add(new BootstrapCommand());
     $app->add(new RouteCommand());
 
