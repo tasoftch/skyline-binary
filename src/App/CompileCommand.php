@@ -118,7 +118,9 @@ class CompileCommand extends Command
             $c = $this->io->choice("You did not specify any project information. Do you want to do manually or load a file?", [
                 "M" => 'manually',
                 'F' => 'use a config file',
-                "A" => "Abort"
+                'D' => 'Download development project.xml',
+				'L' => 'Download production project.xml',
+				"A" => "Abort"
             ], "manually");
 
             if($c == 'F') {
@@ -212,7 +214,15 @@ class CompileCommand extends Command
                 }
 
                 $input->setOption("app-host", $hosts);
-            } else {
+            } elseif($c == 'D' || $c == 'L') {
+            	$url = ($c == 'D') ? 'https://packages.skyline-cms.ch/project/dev-project.xml' : 'https://packages.skyline-cms.ch/project/live-project.xml';
+				$fn = ($c == 'D') ? 'dev-project.xml' : 'live-project.xml';
+
+				$cnt = file_get_contents($url);
+				file_put_contents(getcwd() . DIRECTORY_SEPARATOR . $fn, $cnt);
+				$input->setOption("project", $fn);
+			}
+            else {
                 exit(255);
             }
         }
