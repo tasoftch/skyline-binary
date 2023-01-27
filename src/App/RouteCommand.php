@@ -35,8 +35,11 @@
 namespace Skyline\CLI;
 
 use Skyline\Application\Exception\UnresolvedRouteException;
+use Skyline\Kernel\Bootstrap;
 use Skyline\Kernel\Config\MainKernelConfig;
 use Skyline\Kernel\Config\PluginConfig;
+use Skyline\Kernel\Loader\RequestLoader;
+use Skyline\Module\Loader\ModuleLoader;
 use Skyline\Render\Router\Description\MutableRegexRenderActionDescription;
 use Skyline\Render\Router\Description\RegexRenderActionDescription;
 use Skyline\Render\Router\Description\RenderActionDescription;
@@ -59,42 +62,93 @@ class RouteCommand extends AbstractSkylineCommand
 		$this->setDescription("Routes a given request to a controller and its method")
 			->setName("route")
 			->addArgument("URI", InputArgument::REQUIRED, 'The request URI')
-			->addOption("content-type", 't', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'HTTP headers (ex: --content-type \'text/html;q=0.9\'');
+			->addOption("content-type", 't', InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, 'HTTP Content-Type Header (ex: --content-type \'text/html;q=0.9\'');
 	}
 
 	protected function interact(InputInterface $input, OutputInterface $output)
 	{
-
+		if(!$input->getArgument("URI")) {
+			$uri = $this->io->ask("Please enter an URI: ");
+			if($uri)
+				$input->setArgument("URI", $uri);
+		}
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
 		$URI = $input->getArgument("URI");
-		$url = parse_url($URI);
-		$url["scheme"] = $url["scheme"] ?? 'http';
 
 		$appData = $input->getOption("app-data");
 
-
-
-		$SERVER = [
-			"HTTP_HOST" => $url["host"],
-			"SERVER_ADDR" => $url["port"] ?? ($url["scheme"] == 'https' ? 443 : 80)
-		];
-
 		if($cts = $input->getOption("content-type")) {
-			$SERVER["HTTP_ACCEPT"] = implode(",", $cts);
+			$_SERVER["HTTP_ACCEPT"] = implode(",", $cts);
 		}
 
-		if($url["scheme"] == 'https')
-			$SERVER["HTTPS"] = 'on';
+		$components = parse_url($URI);
+		if (isset($components['host'])) {
+			$_SERVER['SERVER_NAME'] = $components['host'];
+			$_SERVER['HTTP_HOST'] = $components['host'];
+		}
 
-		$REQUEST = Request::create($url['path'], 'GET', [], [], [], $SERVER);
+		if (isset($components['scheme'])) {
+			if ('https' === $components['scheme']) {
+				$_SERVER['HTTPS'] = 'on';
+				$_SERVER['SERVER_PORT'] = 443;
+			} else {
+				unset($_SERVER['HTTPS']);
+				$_SERVER['SERVER_PORT'] = 80;
+			}
+		}
+
+		if (isset($components['port'])) {
+			$_SERVER['SERVER_PORT'] = $components['port'];
+			$_SERVER['HTTP_HOST'] .= ':'.$components['port'];
+		}
+
+		if (isset($components['user'])) {
+			$_SERVER['PHP_AUTH_USER'] = $components['user'];
+		}
+
+		if (isset($components['pass'])) {
+			$_SERVER['PHP_AUTH_PW'] = $components['pass'];
+		}
+
+		if (!isset($components['path'])) {
+			$components['path'] = '/';
+		}
+
+		$queryString = '';
+		if (isset($components['query'])) {
+			parse_str(html_entity_decode($components['query']), $qs);
+
+			if (isset($query)) {
+				$query = array_replace($qs, $query);
+				$queryString = http_build_query($query, '', '&');
+			} else {
+				$query = $qs;
+				$queryString = $components['query'];
+			}
+		} elseif (isset($query)) {
+			$queryString = http_build_query($query, '', '&');
+		}
+
+		$_SERVER['REQUEST_URI'] = $components['path'].('' !== $queryString ? '?'.$queryString : '');
+		$_SERVER['QUERY_STRING'] = $queryString;
 
 		$serviceManager = NULL;
 
+		$config = @include "$appData/Compiled/main.config.php";
+		if(!$config) {
+			throw new \RuntimeException("Can not read main configuration.");
+		}
+
+		ServiceManager::rejectGeneralServiceManager();
+		$_SERVER["SKY_IGNORE_CLI"] = true;
+		Bootstrap::bootstrap($config);
 
 		if($output->isDebug()) {
+			$REQUEST = RequestLoader::$request;
+
 			$this->io->title("Request");
 			$data = [
 				[
@@ -132,33 +186,9 @@ class RouteCommand extends AbstractSkylineCommand
 			], $data);
 		}
 
-		$config = @include "$appData/Compiled/main.config.php";
-		if(!$config) {
-			throw new \RuntimeException("Can not read main configuration.");
-		}
+		$serviceManager = ServiceManager::generalServiceManager();
 
-		$parameters = require "$appData/Compiled/parameters.config.php";
-		if(!$parameters) {
-			$parameters = [];
-			trigger_error("Can not read parameters.", E_USER_WARNING);
-		}
-
-		global $_MAIN_CONFIGURATION;
-		$_MAIN_CONFIGURATION = $config;
-
-		ServiceManager::rejectGeneralServiceManager();
-		$serviceManager = ServiceManager::generalServiceManager($config[ MainKernelConfig::CONFIG_SERVICES ]);
-
-		foreach($parameters as $parameterName => $parameterValue)
-			$serviceManager->setParameter($parameterName, $parameterValue);
-
-		$serviceManager->addCustomArgumentHandler(function($key, $value) {
-			if(is_string($value) && strpos($value, '$(') !== false)
-				return SkyGetPath($value, false);
-			return $value;
-		}, "LOCATIONS");
-
-		$event = new HTTPRequestRouteEvent($REQUEST);
+		$event = new HTTPRequestRouteEvent( RequestLoader::$request );
 		$event->setActionDescription(new MutableRegexRenderActionDescription());
 
 		$serviceManager->set("request", $request = method_exists($event, 'getRequest') && ($r = $event->getRequest()) ? $r : Request::createFromGlobals());
@@ -192,7 +222,7 @@ class RouteCommand extends AbstractSkylineCommand
 		if($actionDescription instanceof RegexActionDescription) {
 			$data[] = [
 				"Captures",
-				implode(", ", $actionDescription->getCaptures())
+				implode(", ", $actionDescription->getCaptures() ?: [])
 			];
 		}
 
@@ -201,6 +231,10 @@ class RouteCommand extends AbstractSkylineCommand
 				'Render',
 				$actionDescription->getRenderName()
 			];
+
+		if(class_exists(ModuleLoader::class)) {
+			$data[] = ["Module", ModuleLoader::getModuleName() ?: "-.-"];
+		}
 
 		$this->io->table([
 			"Attribute",
