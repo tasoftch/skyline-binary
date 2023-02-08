@@ -232,7 +232,7 @@ class CompileCommand extends Command
     {
         $project = $input->getOption("project");
 
-        $zero = $input->getOption("zero") ? true : false;
+        $zero = (bool)$input->getOption("zero");
         if($zero && $output->getVerbosity() > $output::VERBOSITY_VERBOSE)
             $this->io->text("** Use Zero links");
 
